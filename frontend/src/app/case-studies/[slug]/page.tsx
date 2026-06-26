@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getApiBaseUrl } from "@/utils/api";
 import { ArrowLeft, Calendar, HardDrive } from "lucide-react";
 import { notFound } from "next/navigation";
+import { Metadata } from "next";
 
 interface CaseStudy {
   id: string;
@@ -99,6 +100,28 @@ export async function generateStaticParams() {
     { slug: "enterprise-ai-document-ingestion-pipeline" },
     { slug: "nextjs-client-portal-cms-migration" }
   ];
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const cs = await getCase(slug);
+  if (!cs) {
+    return {
+      title: "Case Study Not Found | BAGPACKERS AI",
+    };
+  }
+  const description = cs.content.split("\n\n")[0]?.replace(/## |[*]/g, "") || cs.title;
+  const descSanitized = description.length > 155 ? `${description.slice(0, 152)}...` : description;
+  return {
+    title: `${cs.title} | BAGPACKERS AI Case Study`,
+    description: descSanitized,
+    openGraph: {
+      title: cs.title,
+      description: descSanitized,
+      type: "article",
+      url: `https://bagpackers.dev/case-studies/${cs.slug}`,
+    }
+  };
 }
 
 export default async function CaseStudyDetailPage({ params }: { params: Promise<{ slug: string }> }) {
