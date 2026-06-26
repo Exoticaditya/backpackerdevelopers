@@ -1,5 +1,6 @@
 "use client";
-import { getApiBaseUrl } from "@/utils/api";
+
+import { fetchAdminStatsAction } from "@/app/actions";
 
 import { useEffect, useState } from "react";
 import { 
@@ -27,22 +28,12 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       const token = localStorage.getItem("admin_token") || "";
-      try {
-        const res = await fetch(`${getApiBaseUrl()}/api/v1/admin/stats`, {
-          headers: {
-            "X-Admin-Token": token,
-          },
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          setStats(data);
-        } else {
-          setError("Failed to fetch dashboard metrics. Check admin token validation.");
-        }
-      } catch (err) {
+      const result = await fetchAdminStatsAction(token);
+      
+      if (result.success && result.data) {
+        setStats(result.data);
+      } else if (result.isOffline) {
         console.warn("Backend offline during stats fetch. Using simulated fallbacks.");
-        // Simulated statistics fallback for preview/testing
         setStats({
           totalEnquiries: 14,
           totalLeads: 28,
@@ -62,9 +53,10 @@ export default function AdminDashboard() {
             { id: "2", sessionToken: "showcase-session", initialImageHash: "9c2a11de43b2f564", generatedSql: "CREATE TABLE invoices...", executionTimeMs: 45, createdAt: new Date(Date.now() - 60000).toISOString() }
           ]
         });
-      } finally {
-        setLoading(false);
+      } else {
+        setError(result.error || "Failed to fetch dashboard metrics. Check admin token validation.");
       }
+      setLoading(false);
     };
 
     fetchStats();

@@ -37,7 +37,8 @@ public class SecurityConfig {
                     "/api/v1/sandbox/idp",
                     "/api/v1/enquiries",
                     "/api/v1/enquiries/**",
-                    "/api/v1/metadata"
+                    "/api/v1/metadata",
+                    "/api/v1/auth/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             );

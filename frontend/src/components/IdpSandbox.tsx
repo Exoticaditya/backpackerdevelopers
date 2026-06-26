@@ -5,7 +5,7 @@ import { Play, Copy, RefreshCw, AlertTriangle, Check, Terminal as TerminalIcon }
 import { motion, AnimatePresence } from "framer-motion";
 import { escapeHtml } from "@/utils/security";
 import { trackEvent } from "@/utils/telemetry";
-import { getApiBaseUrl } from "@/utils/api";
+import { runSandboxAction } from "@/app/actions";
 
 const PRESETS = {
   invoices: `invoice_2026_01.pdf - Date: 2026-01-10, Amount: 1450.00, Email: customer@acme.com, Qty: 4
@@ -37,38 +37,20 @@ export default function IdpSandbox() {
 
     const sanitizedContent = escapeHtml(content);
 
-    try {
-      const response = await fetch(`${getApiBaseUrl()}/api/v1/sandbox/idp`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          content: sanitizedContent,
-          sessionToken: "showcase-session"
-        }),
+    const result = await runSandboxAction(sanitizedContent, "showcase-session");
+    
+    if (result.success && result.data) {
+      setSql(result.data.sql);
+      setStats({
+        executionTimeMs: result.data.executionTimeMs,
+        hash: result.data.hash
       });
-
-      const data = await response.json();
-      if (!response.ok) {
-        const errorMsg = data.error || "Execution failed. Check backend console.";
-        setError(errorMsg);
-        trackEvent("sandbox_ocr_execute", {
-          input_length: content.length,
-          execution_success: false
-        });
-      } else {
-        setSql(data.sql);
-        setStats({
-          executionTimeMs: data.executionTimeMs,
-          hash: data.hash
-        });
-        trackEvent("sandbox_ocr_execute", {
-          input_length: content.length,
-          execution_success: true
-        });
-      }
-    } catch (err) {
+      trackEvent("sandbox_ocr_execute", {
+        input_length: content.length,
+        execution_success: true
+      });
+      setLoading(false);
+    } else if (result.isOffline) {
       console.warn("Backend offline. Simulating local OCR execution.");
       setTimeout(() => {
         setSql(simulateSql(sanitizedContent));
@@ -82,9 +64,14 @@ export default function IdpSandbox() {
           execution_success: true
         });
       }, 700);
-      return;
+    } else {
+      setError(result.error || "Execution failed. Check backend console.");
+      trackEvent("sandbox_ocr_execute", {
+        input_length: content.length,
+        execution_success: false
+      });
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const simulateSql = (input: string) => {

@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, CheckCircle2, AlertTriangle, MessageSquare, Briefcase, Sparkles } from "lucide-react";
 import { escapeHtml } from "@/utils/security";
-import { getApiBaseUrl } from "@/utils/api";
+import { submitEnquiryAction } from "@/app/actions";
 
 // Custom Fetch Hook
 function useEnquirySubmit() {
@@ -19,41 +19,20 @@ function useEnquirySubmit() {
     setSuccess(false);
     setIsSimulated(false);
 
-    try {
-      const response = await fetch(`${getApiBaseUrl()}/api/v1/enquiries`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        let errorMsg = `API submission failed with status code ${response.status}`;
-        try {
-          const errData = await response.json();
-          if (errData && errData.message) {
-            errorMsg = errData.message;
-          }
-        } catch (_) {
-          // Ignore json parsing error and use default message
-        }
-        setError(errorMsg);
-        setSuccess(false);
-        return false;
-      }
-
-      setSuccess(true);
-      return true;
-    } catch (err: any) {
-      console.warn("Backend offline. Activating simulation fallback.", err);
-      // Simulate success since backend might be offline during local testing
-      setIsSimulated(true);
-      setSuccess(true);
-      return true;
-    } finally {
+    const result = await submitEnquiryAction(data);
+    if (!result.success) {
+      setError(result.error || "Submission failed");
+      setSuccess(false);
       setLoading(false);
+      return false;
     }
+
+    if (result.isSimulated) {
+      setIsSimulated(true);
+    }
+    setSuccess(true);
+    setLoading(false);
+    return true;
   };
 
   return { submitEnquiry, loading, error, success, isSimulated, setSuccess, setError };

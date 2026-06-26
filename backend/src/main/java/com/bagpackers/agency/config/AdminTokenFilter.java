@@ -23,10 +23,26 @@ public class AdminTokenFilter extends OncePerRequestFilter {
 
         if (isAdminPath(path, method)) {
             String token = request.getHeader("X-Admin-Token");
-            if (token == null || !token.equals(adminToken)) {
+            String authHeader = request.getHeader("Authorization");
+            boolean authorized = false;
+
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                String jwt = authHeader.substring(7);
+                if (com.bagpackers.agency.utils.JwtUtil.validateToken(jwt, "admin")) {
+                    authorized = true;
+                }
+            }
+
+            if (!authorized && token != null) {
+                if (com.bagpackers.agency.utils.JwtUtil.validateToken(token, "admin") || token.equals(adminToken)) {
+                    authorized = true;
+                }
+            }
+
+            if (!authorized) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.setContentType("application/json");
-                response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"Invalid or missing admin token\"}");
+                response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"Invalid or missing authentication credentials\"}");
                 return;
             }
         }

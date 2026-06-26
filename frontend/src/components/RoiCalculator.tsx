@@ -5,21 +5,21 @@ import { Save, CheckCircle2, HelpCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { escapeHtml } from "@/utils/security";
 import { trackEvent } from "@/utils/telemetry";
-import { getApiBaseUrl } from "@/utils/api";
+import { submitLeadAction } from "@/app/actions";
 
 export default function RoiCalculator() {
   const [company, setCompany] = useState("");
-  const [manualHours, setManualHours] = useState(250);
-  const [hourlyRate, setHourlyRate] = useState(45);
+  const [manualHours, setManualHours] = useState(80);
+  const [hourlyRate, setHourlyRate] = useState(75);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
   // Calculations
-  const efficiency = 0.75; // 75% efficiency target
-  const savedHours = Math.round(manualHours * efficiency);
-  const monthlySavings = savedHours * hourlyRate;
+  const automatedHours = manualHours * 0.15;
+  const savedHours = Math.round(manualHours - automatedHours);
+  const monthlySavings = Math.round(savedHours * hourlyRate);
   const annualSavings = monthlySavings * 12;
-  const implementationCost = Math.round(annualSavings * 0.18 + 5000);
+  const implementationCost = 24500;
   const netRoi = annualSavings - implementationCost;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -28,38 +28,21 @@ export default function RoiCalculator() {
     if (!sanitizedCompany) return;
 
     setSubmitting(true);
-    try {
-      const response = await fetch(`${getApiBaseUrl()}/api/v1/leads`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          company: sanitizedCompany,
-          estimatedManualHours: manualHours,
-          projectedRoi: netRoi > 0 ? netRoi : 0,
-        }),
-      });
+    const result = await submitLeadAction({
+      company: sanitizedCompany,
+      estimatedManualHours: manualHours,
+      projectedRoi: netRoi > 0 ? netRoi : 0,
+    });
 
-      if (response.ok) {
-        setSuccess(true);
-        trackEvent("lead_conversion_submit", {
-          company_name: sanitizedCompany,
-          estimated_annual_savings: annualSavings,
-          net_roi: netRoi
-        });
-      }
-    } catch (err) {
-      console.warn("Backend offline. Simulating lead capture.");
+    if (result.success) {
       setSuccess(true);
       trackEvent("lead_conversion_submit", {
         company_name: sanitizedCompany,
         estimated_annual_savings: annualSavings,
         net_roi: netRoi
       });
-    } finally {
-      setSubmitting(false);
     }
+    setSubmitting(false);
   };
 
   const handleSliderChange = (hours: number, rate: number) => {

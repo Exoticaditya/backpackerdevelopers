@@ -1,5 +1,6 @@
 "use client";
-import { getApiBaseUrl } from "@/utils/api";
+
+import { loginAction } from "@/app/actions";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -19,32 +20,14 @@ export default function AdminLoginPage() {
     setLoading(true);
     setError("");
 
-    try {
-      // Perform verification request directly to the stats API
-      const res = await fetch(`${getApiBaseUrl()}/api/v1/admin/stats`, {
-        headers: {
-          "X-Admin-Token": token.trim(),
-        },
-      });
-
-      if (res.ok) {
-        localStorage.setItem("admin_token", token.trim());
-        router.push("/admin");
-      } else {
-        setError("Invalid credentials. The security gateway rejected the token.");
-      }
-    } catch (err) {
-      // If backend is offline, simulate check for local development validation
-      console.warn("Backend offline during login, checking for fallback default token.");
-      if (token.trim() === "dev-secure-admin-token") {
-        localStorage.setItem("admin_token", token.trim());
-        router.push("/admin");
-      } else {
-        setError("Gateway offline. Please ensure the Spring Boot server is active.");
-      }
-    } finally {
-      setLoading(false);
+    const result = await loginAction(token.trim());
+    if (result.success && result.accessToken) {
+      localStorage.setItem("admin_token", result.accessToken);
+      router.push("/admin");
+    } else {
+      setError(result.error || "Authentication failed. The security gateway rejected the credentials.");
     }
+    setLoading(false);
   };
 
   return (

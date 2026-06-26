@@ -30,8 +30,9 @@ Welcome to the flagship enterprise platform for **Bagpackers Developers**—a gl
 2. **Floating capsule Navbar**: Centered glassmorphic capsule menu featuring a 3-column Services mega-dropdown with double-bezel cards, fully responsive with nested mobile accordions.
 3. **Interactive ROI Calculator**: A real-time client ROI estimator with adjustable sliders that dynamically projects engineering savings and compiles them into lead capture payloads.
 4. **Intelligent Document Processing (IDP) Sandbox**: An interactive OCR-to-SQL compiler simulator demonstrating how physical logs and unstructured lists compile to structured database schemas safely.
-5. **Secure Admin Dashboard**: Restricted client-side routes enabling administrative staff to manage inquiries, check conversion telemetry, and configure dynamic metadata with Google Search and Social Open Graph sharing previews.
-6. **Robust Rate-Limiting**: Enforces token-bucket rate limits (`Bucket4j`) on all public endpoints to protect processing servers from flood requests.
+5. **Secure Admin Dashboard**: Restricted client-side routes powered by **Stateless JWT Authentication** (15-minute short-lived access tokens and 7-day secure `HttpOnly` refresh cookies) enabling administrative staff to manage inquiries, check conversion telemetry, and configure dynamic metadata with Google Search and Social Open Graph sharing previews.
+6. **Vercel Server Actions**: Securely bridges all client-to-backend operations (contact forms, lead submissions, sandbox execution, and administrative panel requests) via Next.js Server Actions, shielding backend API URLs and credentials from client inspection.
+7. **Robust Rate-Limiting**: Enforces token-bucket rate limits (`Bucket4j`) on all public endpoints to protect processing servers from flood requests.
 
 ---
 
